@@ -1,0 +1,101 @@
+---
+format:
+  typst:
+    papersize: us-letter
+    margin:
+      x: 0.75in
+      y: 0.6in
+    include-before-body: _handout-style.typ
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| include: false
+source("R/riverton.R")
+```
+
+# Facilitator guide: You Are the Riverton Health Department
+
+```{=typst}
+#text(fill: rgb("#6b675f"))[For Jackie Massuda · Recitation for "Where Did You Get Sick?" (lecture Oct 23, 2026) · Eric Delmelle]
+```
+
+**Goal.** Groups act as a health department and receive evidence about one fictional case in four rounds, committing to a decision each time. The aim is not to find the cause. It is to notice how interpretation and confidence change as evidence accumulates, and to practice deciding before the uncertainty goes away. Students saw the same town in lecture; here they work with case-level detail, must commit as a group, and face public pressure.
+
+## Before the session
+
+Form groups of 4–5. Print one set per group: page 1 (briefing) with the record sheet (page 7), then Rounds 1, 2, 3 and 4 (pages 2–6) as separate handouts. Hand out each round only after the group has written its decision for the previous one. If printing is a problem, project the round pages instead.
+
+```{=typst}
+#set table(stroke: 0.5pt + rgb("#cfc9be"), inset: 5pt)
+#table(columns: (1fr, 1fr, 1fr, 1fr, 1.2fr, 1fr),
+  table.header([*Setup, roles*], [*Round 1*], [*Round 2*], [*Round 3*], [*Round 4 + final*], [*Debrief*]),
+  [5 min], [8 min], [8 min], [9 min], [13 min], [10 min])
+```
+
+**Say out loud:** decide before the next round, with no going back; there is no hidden answer, so do not confirm or reject any group's explanation. If a group asks a factual question, answer only from *Release if asked* below; otherwise reply "the department doesn't know that yet; would you collect it?"
+
+## Round 1 · Where the cases live
+
+*Purpose:* a visible pattern invites a confident explanation. *Expect:* "something in the water", "a factory", "coincidence", "older people"; most groups choose B or C. *Prompts:* What would make this pattern *not* unusual? What would choosing A right now cost?
+
+*Release if asked:* at national rates (about 25 per 100,000 per year) a town of 18,000 would expect roughly `r nums$expected` diagnoses in five years, so the town total is ordinary and only the concentration is unusual. The Flats is somewhat older than the town average (don't explain why until Round 4). Smoking, jobs, and residential history are not in the registry.
+
+## Round 2 · A possible source
+
+*Purpose:* a plausible source makes the story feel solved. *Expect:* a jump toward A (test the soil, warn residents). *Prompts:* Distance is not exposure; how would a non-worker actually take these chemicals in? The site has been capped since 2009 and homes use reservoir water, so which routes are still open today? What does soil testing cost in fear, even if the results come back clean?
+
+*Release if asked:* residential yard soil has never been sampled, and results would take about two months. There are no air measurements from the years the plant operated.
+
+## Round 3 · Where people worked and spent time
+
+*Purpose:* the link may run through jobs rather than homes; a second plant appears; a shared place can mislead. *Expect:* a shift toward an occupational explanation, and interest in the senior center. *Prompts:* If the cause was at work, does warning Flats residents make sense? Which former workers are not on this map at all? The senior center: these are older neighbors; can a place they visit now explain a cancer that develops over decades? (Contrast with Sam in the lecture, where a shared place *would* matter for an infection.)
+
+*Release if asked:* 13 of the 23 have a smoking history, roughly typical for people with this cancer. Keller employed several hundred people at its peak; a retirees' association still has about 150 members. Ashby's employment records are held by the company that bought it.
+
+## Round 4 · Time and residential history
+
+*Purpose:* timing reshapes the cluster. Some of today's Flats cases arrived recently (senior housing); some of the people most plausibly exposed have moved away and now sit "outside" the cluster. *Expect:* confidence drops; some groups move from A to B or C, others keep A for former workers. The *Meanwhile* page pushes toward visible action. *Prompts:* Whom does the 2021–2025 map miss? Is the problem now "the Flats", "Keller", "two workplaces", or several things at once? Which action is justified even if residential exposure turns out not to matter (for example, contacting former workers)? What do you say at Thursday's meeting if you are not sure?
+
+## Debrief (whole class)
+
+Tally each group's final decision (A–D) on the board, then choose three or four:
+
+- At what round did you have enough to act? What was the risk of acting one round earlier, or one round later?
+- What happens if you act and the threat was not real? If you wait and it was?
+- How much information about people's movements should a health department be allowed to collect?
+- Could the same action protect one group and harm another (a public warning about the Flats, for the residents of Riverside Commons or for homeowners)?
+- Who should decide when the evidence is strong enough: scientists, health officials, elected leaders, residents?
+
+Close with the lecture's question: *when do we know enough to act?*
+
+**Avoid** presenting the case key as the solution, turning the rounds into arithmetic, or letting a group skip a decision.
+
+{{< pagebreak >}}
+
+# Case key (facilitator only)
+
+The case was designed so that more than one explanation stays plausible. Of the `r nums$n` cases, **`r nums$keller + nums$ashby`** worked at one of the plants (`r nums$keller` Keller, `r nums$ashby` Ashby), so occupational exposure is plausible. **`r sum(cases$in_flats_85 & !cases$keller_worker & !cases$ashby_worker)`** more lived in the Flats while Keller operated but never worked there, so historical residential exposure is possible but unproven. **`r sum(!cases$in_flats_85 & !cases$keller_worker & !cases$ashby_worker)`** have no identifiable link, consistent with background cases (age, smoking, chance). Today's concentration in the Flats is partly produced by Riverside Commons (`r nums$commons` older residents who moved in 2016–2020).
+
+```{r}
+#| results: asis
+link <- ifelse(cases$keller_worker, "Work: Keller",
+          ifelse(cases$ashby_worker, "Work: Ashby",
+            ifelse(cases$in_flats_85, "Lived in Flats while plant ran", "None identified")))
+work <- ifelse(!is.na(cases$keller), paste("Keller", cases$keller),
+          ifelse(!is.na(cases$ashby), paste("Ashby", cases$ashby), ""))
+now <- paste0(sub("The ", "", cases$nbhd), ifelse(cases$commons == 1, " (Commons)", ""))
+cell <- function(x) paste0("[", x, "]")
+rows <- paste(cell(cases$id), cell(now), cell(paste0(cases$age_dx, ", ", cases$year_dx)),
+              cell(sub("The ", "", cases$nbhd85)), cell(work), cell(link), cell(cases$history),
+              sep = ", ", collapse = ",\n")
+cat("```{=typst}",
+    "#set text(size: 8pt)",
+    "#table(columns: (0.35in, 0.95in, 0.6in, 0.7in, 0.95in, 1.05in, 1fr),",
+    "  stroke: 0.4pt + rgb(\"#cfc9be\"), inset: 3.5pt,",
+    "  table.header([*Case*], [*Home at diagnosis*], [*Age, year*], [*Home in 1985*], [*Worked at*], [*Possible link*], [*History*]),",
+    rows, ")", "```", sep = "\n")
+```

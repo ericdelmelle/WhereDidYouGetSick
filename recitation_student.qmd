@@ -1,0 +1,242 @@
+---
+format:
+  typst:
+    papersize: us-letter
+    margin:
+      x: 0.8in
+      y: 0.65in
+    include-before-body: _handout-style.typ
+execute:
+  echo: false
+  warning: false
+  message: false
+knitr:
+  opts_chunk:
+    dpi: 200
+    fig.width: 7
+    fig.height: 3.675
+    out.width: "100%"
+---
+
+```{r}
+#| include: false
+source("R/riverton.R")
+source("R/maps.R")
+options(riverton.tm = 1)
+```
+
+# You Are the Riverton Health Department
+
+```{=typst}
+#text(fill: rgb("#6b675f"))[Recitation packet · Where Did You Get Sick? · First Year Seminar, Wicked Problems in Health]
+```
+
+## The call
+
+In March 2026, a resident of the Flats calls the Riverton Health Department. Several people she knows have been diagnosed with bladder cancer in the last few years. She wants to know whether something in the Flats is making people sick, and so do her neighbors.
+
+Your group is the department's response team. Riverton is a fictional river town of about 18,000 people.
+
+## How this works
+
+You will receive information in **four rounds**. After each round, your group must **commit to a decision** on the record sheet *before* you get the next round. You cannot go back and change an earlier decision.
+
+At every round, choose one:
+
+```{=typst}
+#factbox[
+#grid(columns: (auto, 1fr), row-gutter: 7pt, column-gutter: 8pt,
+  roundtag("A"), [Take immediate public-health action],
+  roundtag("B"), [Begin a targeted investigation],
+  roundtag("C"), [Collect additional data before intervening],
+  roundtag("D"), [Continue routine surveillance],
+)]
+```
+
+Then write one sentence on what you would actually *do* next, and how confident you are.
+
+## Suggested roles
+
+**Director** makes the final call when the group is split. **Epidemiologist** keeps track of what the evidence does and does not show. **Environmental health officer** thinks about possible sources and how people could be exposed. **Community liaison** thinks about residents, workers, and public trust. **Recorder** fills in the record sheet. Groups of four can combine two roles.
+
+There is no hidden correct answer. What matters is how your reasoning changes, or does not, as the evidence arrives.
+
+{{< pagebreak >}}
+
+```{=typst}
+#roundtag("ROUND 1")
+```
+
+# Where the cases live
+
+```{r}
+map_cases(note = TRUE)
+```
+
+```{=typst}
+#factbox[
+- The state cancer registry lists *`r nums$n` Riverton residents* diagnosed with bladder cancer from 2021 to 2025.
+- Each record holds age, sex, date of diagnosis, and *home address at diagnosis*. Nothing else.
+- About 2,800 of Riverton's 18,000 residents (`r nums$flats_pop_share`%) live in the Flats, but *`r nums$flats_now` of the `r nums$n` cases* live there.
+- Bladder cancer risk rises with age: about 9 in 10 people diagnosed are over 55. Smoking is the most important known risk factor; some workplace chemicals also raise risk.
+]
+```
+
+## Discuss
+
+1. Does something unusual seem to be happening? Why?
+2. List at least two *different* explanations for this pattern.
+3. What one piece of information would you request first?
+
+**Record your Round 1 decision before asking for Round 2.**
+
+{{< pagebreak >}}
+
+```{=typst}
+#roundtag("ROUND 2")
+```
+
+# A possible source
+
+```{r}
+map_source()
+```
+
+```{=typst}
+#factbox[
+- *Keller Dye Works* operated beside the Flats from 1948 to 1994 and made textile dyes. Some chemicals once used to make dyes are known to cause bladder cancer in heavily exposed workers.
+- A 2006 state inspection found chemical contamination in the soil and shallow groundwater *on the plant site*. The site was fenced and capped in 2009; nobody lives on it. Residential yards have never been tested.
+- Flats homes have used public water from an upland reservoir since 1962. Before that, some homes used private wells.
+- Long-time residents remember a strong chemical smell, and colored water in the river, while the plant was running.
+- *`r nums$within_1km` of the `r nums$n` cases* live within 1 km of the former plant (dashed circle).
+]
+```
+
+## Discuss
+
+1. Does this strengthen the explanation from Round 1?
+2. How could people who never worked at the plant have been exposed? Which of those routes could still matter today?
+3. Would you act now, or do you still need more evidence?
+
+**Record your Round 2 decision before asking for Round 3.**
+
+{{< pagebreak >}}
+
+```{=typst}
+#roundtag("ROUND 3")
+```
+
+# Where people worked and spent time
+
+```{r}
+map_work()
+```
+
+```{=typst}
+#factbox[
+- Health department staff interviewed patients or their families about every job held for a year or more.
+- *`r nums$keller` cases* worked at Keller Dye Works (orange lines). *`r nums$ashby` cases* worked at Ashby Rubber Co. (1946–2009), across the river (blue lines); rubber manufacturing also used chemicals linked to bladder cancer.
+- Of these `r nums$keller + nums$ashby` workers, `r nums$workers_flats` live in the Flats and `r nums$keller + nums$ashby - nums$workers_flats` live elsewhere. *`r nums$n - nums$keller - nums$ashby` cases* never worked at either plant.
+- *`r nums$senior_ctr` of the cases* are regulars at the Flats Senior Center.
+]
+```
+
+## Discuss
+
+1. Which places matter most now: homes, workplaces, or somewhere else?
+2. Does the cluster of homes in the Flats still mean the same thing it did in Round 1?
+3. Should the senior center be investigated? Why or why not?
+
+**Record your Round 3 decision before asking for Round 4.**
+
+{{< pagebreak >}}
+
+```{=typst}
+#roundtag("ROUND 4")
+```
+
+# Time and residential history
+
+```{r}
+#| fig-height: 3.3
+map_commons()
+```
+
+```{=typst}
+#factbox[
+*Riverside Commons*, a senior apartment building, opened in the Flats in 2016. *`r nums$commons` of the cases* live there. All moved in between 2016 and 2020, after age 65: three from other Riverton neighborhoods and two from out of town. One of them had worked at Keller for 18 years while living in the Westend.
+]
+```
+
+```{r}
+#| fig-height: 3.3
+map_1985()
+```
+
+```{=typst}
+#factbox[
+This map places each person at their home *in 1985*, while Keller was still running. *`r nums$flats_85`* lived in the Flats then; *`r nums$flats_85_moved`* of those have since moved to Downtown, Northside, or Hillcrest. *`r nums$out_85` of the `r nums$n`* did not live in Riverton in 1985. Cancers linked to workplace chemicals often appear many years, sometimes decades, after exposure.
+]
+```
+
+{{< pagebreak >}}
+
+```{=typst}
+#roundtag("ROUND 4, CONTINUED")
+```
+
+# Meanwhile in Riverton
+
+```{=typst}
+#presbox[
+- A local news site runs the headline *"Cancer cluster in the Flats?"* Residents pack Thursday's council meeting and ask what the health department is doing.
+- The owners of Riverside Commons say prospective residents are cancelling.
+- A developer has applied to build apartments on the capped Keller site. The council votes next month.
+- A group of retired Keller workers asks why nobody ever contacted them.
+]
+```
+
+## Final discussion
+
+1. How does the *timing* of exposure change your interpretation of the map from Round 1?
+2. What is your final recommendation (A–D)? Name the specific actions you would take.
+3. Which piece of evidence most influenced your decision?
+4. What new information would be most likely to *change* your decision?
+5. Who needs to hear from the health department first, and what will you tell them?
+
+Use the record sheet for your final answer.
+
+{{< pagebreak >}}
+
+# Group record sheet
+
+```{=typst}
+Group members: #box(width: 1fr, stroke: (bottom: 0.5pt + rgb("#b9b4aa")), height: 1.1em)
+
+#v(6pt)
+#set table(stroke: 0.5pt + rgb("#b9b4aa"), inset: 7pt)
+#table(
+  columns: (0.75in, 1.25in, 1fr, 1in),
+  rows: (auto, 0.8in, 0.8in, 0.8in, 0.8in),
+  align: (center + horizon, center + horizon, left + top, center + horizon),
+  table.header([*Round*], [*Decision* \ (circle one)], [*What will you do next?* (one sentence)], [*Confidence* \ (circle)]),
+  [1], [A #h(6pt) B #h(6pt) C #h(6pt) D], [], [1 #h(4pt) 2 #h(4pt) 3 #h(4pt) 4],
+  [2], [A #h(6pt) B #h(6pt) C #h(6pt) D], [], [1 #h(4pt) 2 #h(4pt) 3 #h(4pt) 4],
+  [3], [A #h(6pt) B #h(6pt) C #h(6pt) D], [], [1 #h(4pt) 2 #h(4pt) 3 #h(4pt) 4],
+  [4], [A #h(6pt) B #h(6pt) C #h(6pt) D], [], [1 #h(4pt) 2 #h(4pt) 3 #h(4pt) 4],
+)
+#text(size: 8.5pt, fill: rgb("#6b675f"))[A = immediate action · B = targeted investigation · C = more data first · D = routine surveillance. Confidence: 1 = completely uncertain, 4 = very confident.]
+
+#v(8pt)
+*Final recommendation and actions*
+#writeline(0.27in) #writeline(0.27in) #writeline(0.27in)
+
+*The evidence that most influenced our decision*
+#writeline(0.27in) #writeline(0.27in)
+
+*The new information most likely to change our decision*
+#writeline(0.27in) #writeline(0.27in)
+
+*Who we tell first, and what we tell them*
+#writeline(0.27in) #writeline(0.27in)
+```

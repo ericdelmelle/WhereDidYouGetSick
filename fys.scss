@@ -1,0 +1,80 @@
+/*-- scss:defaults --*/
+$body-bg: #ffffff;
+$body-color: #1f1f1f;
+$link-color: #8a4b1f;
+$presentation-heading-color: #3b2314;
+$presentation-heading-font-weight: 650;
+$presentation-font-size-root: 34px;
+$presentation-h2-font-size: 1.3em;
+
+/*-- scss:rules --*/
+$accent: #5b3a1e;
+$muted: #6b675f;
+
+.reveal .slide-number { color: $muted; }
+
+/* title slide */
+#title-slide .title { font-size: 2.2em; color: $accent; }
+#title-slide .subtitle { color: $muted; font-size: 1.05em; }
+#title-slide .institute, #title-slide .date { color: $muted; font-size: 0.7em; }
+
+/* show-of-hands options */
+.vote ul { list-style: none; margin-left: 0; padding-left: 0; }
+.vote li { margin: 0.32em 0; }
+.vote strong {
+  display: inline-block; width: 1.55em; height: 1.55em; line-height: 1.55em;
+  border-radius: 50%; background: $accent; color: #fff; text-align: center;
+  margin-right: 0.55em; font-size: 0.85em;
+}
+.vote.inline ul { display: flex; flex-wrap: wrap; gap: 0.2em 1.2em; font-size: 0.72em; }
+.vote.inline li { margin: 0; }
+
+/* big statement slides */
+.statement p { font-size: 1.45em; line-height: 1.3; }
+.muted, .muted p { color: $muted; }
+
+/* one-line caption under a map */
+.caption { font-size: 0.7em; line-height: 1.3; color: $muted; margin-top: 0.15em !important; }
+.caption strong { color: $accent; }
+
+.keybox {
+  border-left: 6px solid $accent; background: #f6f2ec;
+  padding: 0.45em 0.8em; font-size: 0.8em; margin-top: 0.6em;
+}
+
+.three-places { display: flex; gap: 0.8em; margin-top: 0.6em; }
+.three-places > .place {
+  flex: 1; background: #f6f2ec; padding: 0.5em 0.7em; border-radius: 6px; font-size: 0.85em;
+}
+.three-places .ph { display: block; margin-bottom: 0.25em; color: $accent; font-weight: 650; font-size: 1.05em; }
+
+.reveal table { font-size: 0.85em; }
+.reveal table th { color: $accent; }
+.strike { text-decoration: line-through; color: $muted; }
+
+.ask { font-size: 0.85em; font-weight: 650; color: $accent; text-align: center; margin-top: 0.2em; }
+.caption.ask { font-size: 0.8em; }
+
+/* what your answer assumes */
+.assume { font-size: 0.95em; margin-top: 0.6em; }
+.assume .row {
+  display: grid; grid-template-columns: 1.15fr 2.1fr 1.7fr; gap: 1em;
+  padding: 0.5em 0.2em; border-bottom: 1px solid #e3ded5; align-items: baseline;
+}
+.assume .row > p { display: contents; }
+.assume .row.head { color: $accent; font-weight: 650; font-size: 0.8em; border-bottom: 2px solid $accent; }
+.assume .a { font-weight: 650; }
+.assume .row:not(.head) .c { font-style: italic; color: $accent; }
+
+/* message slides */
+.reveal .kicker {
+  display: block; font-size: 0.42em; letter-spacing: 0.1em; text-transform: uppercase;
+  color: $muted; font-weight: 650;
+}
+.statement .muted p { font-size: 1.05em; }
+.messages ol { font-size: 1.3em; line-height: 1.35; }
+.messages li { margin: 0.45em 0; }
+.messages li:last-child { color: $accent; }
+
+.three-places.big > .place { min-height: 8em; font-size: 1em; padding: 0.7em 0.9em; }
+.three-places.big .ph { font-size: 1.2em; letter-spacing: 0.06em; }

@@ -1,0 +1,4 @@
+project:
+  type: default
+  render:
+    - lecture.qmd  # recitation files: render by name

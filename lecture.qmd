@@ -1,0 +1,647 @@
+---
+title: "Where Did You Get Sick?"
+subtitle: "Place, mobility, time, and uncertainty in public health"
+author: "Eric Delmelle"
+institute: "First Year Seminar · Wicked Problems in Health · College of Health, Lehigh University"
+date: 2026-10-23
+date-format: long
+format:
+  revealjs:
+    theme: [default, fys.scss]
+    width: 1280
+    height: 720
+    margin: 0.06
+    slide-number: c/t
+    transition: none
+    embed-resources: true
+    preview-links: false
+  pdf:
+    papersize: letter
+    geometry:
+      - margin=1in
+    toc: false
+    colorlinks: true
+    code-overflow: wrap
+execute:
+  echo: false
+  warning: false
+  message: false
+knitr:
+  opts_chunk:
+    dpi: 150
+    fig.align: center
+    fig.width: 10.5
+    fig.height: 5.51
+---
+
+```{r}
+#| include: false
+source("R/riverton.R")
+source("R/maps.R")
+options(riverton.tm = 1.5)  # larger map text for projection
+```
+
+```{r}
+#| include: false
+# space-time path; defined here in case R/maps.R is an older copy
+if (!exists("map_maya_stc")) {
+# Maya's day as a space-time path: oblique projection of (x, y, hour)
+stc <- list(sx = 0.35, sy = 0.5, tz = 230, t0 = 6, t1 = 24)
+stc_xy <- function(x, y, t = stc$t0)
+  data.frame(X = x + stc$sx * y, Y = stc$sy * y + (t - stc$t0) * stc$tz)
+stc_geom <- function(g) g * matrix(c(1, stc$sx, 0, stc$sy), 2, 2)  # shear + squash floor
+
+maya_day <- data.frame(
+  stop  = c("Home", "Gym", "Classes", "Coffee shop job", "Home", "Friend's place", "Home"),
+  t_in  = c(6, 7.75, 9.25, 13, 18.5, 20 + 1/3, 23 + 1/3),
+  t_out = c(7.5, 8.75, 12.5, 18, 20, 23, 24),
+  lab   = c(NA, "Gym, 7:45-8:45 am", "Classes, 9:15 am-12:30 pm",
+            "Coffee shop job, 1-6 pm", "Home", "Friend's place, 8:20-11 pm", NA),
+  side  = c(1, -1, 1, 1, -1, 1, 1))  # label right (1) or left (-1)
+maya_day$x <- maya$x[match(maya_day$stop, maya$stop)]
+maya_day$y <- maya$y[match(maya_day$stop, maya$stop)]
+
+map_maya_stc <- function(full = TRUE) {
+  hrs <- seq(stc$t0, stc$t1, by = 3)
+  hlab <- c("6 am", "9 am", "noon", "3 pm", "6 pm", "9 pm", "midnight")
+  # cube frame and wall grid
+  cx <- c(0, 8000, 8000, 0); cy <- c(0, 0, 4200, 4200)
+  edges <- do.call(rbind, lapply(1:4, function(i) {
+    a <- stc_xy(cx[i], cy[i], stc$t0); b <- stc_xy(cx[i], cy[i], stc$t1)
+    data.frame(X = a$X, Y = a$Y, Xe = b$X, Ye = b$Y)
+  }))
+  wall <- do.call(rbind, lapply(hrs, function(h) {
+    p <- stc_xy(c(0, 0, 8000), c(0, 4200, 4200), h)
+    data.frame(X = p$X[1:2], Y = p$Y[1:2], Xe = p$X[2:3], Ye = p$Y[2:3])
+  }))
+  top <- stc_xy(c(cx, 0), c(cy, 0), stc$t1)
+  ax <- stc_xy(0, 0, hrs)
+  # floor map
+  hl <- cbind(hood_labels, stc_xy(hood_labels$x, hood_labels$y))
+  g <- ggplot() +
+    geom_sf(data = stc_geom(st_geometry(hoods)), fill = col$land, colour = NA) +
+    geom_sf(data = stc_geom(roads), colour = col$road, linewidth = 0.8) +
+    geom_sf(data = stc_geom(rail), colour = col$rail, linewidth = 0.35, linetype = "22") +
+    geom_sf(data = stc_geom(river), fill = col$river, colour = NA) +
+    geom_text(data = hl, aes(X, Y, label = name), colour = col$hood_txt,
+              fontface = "bold", size = 3 * tm()) +
+    geom_segment(data = wall, aes(X, Y, xend = Xe, yend = Ye), colour = "#e6e2da", linewidth = 0.4) +
+    geom_segment(data = edges, aes(X, Y, xend = Xe, yend = Ye), colour = "#cfc9be", linewidth = 0.5) +
+    geom_path(data = top, aes(X, Y), colour = "#cfc9be", linewidth = 0.5) +
+    annotate("text", x = -120, y = 0, label = "6 am", hjust = 1, size = 3.3 * tm(), colour = col$muted) +
+    annotate("text", x = stc_xy(300, 2100, stc$t1)$X, y = stc_xy(300, 2100, stc$t1)$Y,
+             label = "midnight", hjust = 0, size = 3.3 * tm(), colour = col$muted) +
+    annotate("text", x = -1250, y = stc$tz * 9, label = "time of day", angle = 90,
+             size = 3.3 * tm(), colour = col$muted) +
+    annotate("segment", x = -1250, xend = -1250, y = stc$tz * 12.2, yend = stc$tz * 14.5,
+             colour = col$muted, linewidth = 0.5,
+             arrow = arrow(length = unit(0.1, "inches"), type = "closed")) +
+    annotate("text", x = stc_xy(7000, 1700)$X, y = stc_xy(7000, 1700)$Y, label = "Ashby River",
+             colour = col$river_txt, fontface = "italic", size = 3 * tm())
+  if (!full) {
+    h <- maya_day[1, ]
+    a <- stc_xy(h$x, h$y, stc$t0); b <- stc_xy(h$x, h$y, stc$t1)
+    g <- g + annotate("segment", x = a$X, y = a$Y, xend = b$X, yend = b$Y,
+                      colour = col$path, linewidth = 1.6) +
+      annotate("point", x = a$X, y = a$Y, shape = 21, size = 4.5, fill = col$path,
+               colour = "white", stroke = 1) +
+      annotate("label", x = b$X + 150, y = stc_xy(h$x, h$y, 15)$Y, hjust = 0, size = 4 * tm(),
+               label = "Home address,\nall day, every day", fill = "white", label.size = 0, lineheight = 0.9)
+  } else {
+    d <- maya_day
+    pts <- do.call(rbind, lapply(seq_len(nrow(d)), function(i)
+      stc_xy(d$x[i], d$y[i], c(d$t_in[i], d$t_out[i]))))
+    fl <- stc_xy(d$x, d$y)
+    st <- unique(d[, c("stop", "x", "y")]); st$t1st <- d$t_in[match(st$stop, d$stop)]
+    drop <- cbind(stc_xy(st$x, st$y), setNames(stc_xy(st$x, st$y, st$t1st), c("Xe", "Ye")))
+    lb <- d[!is.na(d$lab), ]
+    lb <- cbind(lb, stc_xy(lb$x, lb$y, (lb$t_in + lb$t_out) / 2))
+    g <- g +
+      geom_path(data = fl, aes(X, Y), colour = col$path, alpha = 0.35, linewidth = 0.8) +
+      geom_segment(data = drop, aes(X, Y, xend = Xe, yend = Ye), colour = col$ghost,
+                   linewidth = 0.4, linetype = "22") +
+      geom_point(data = stc_xy(st$x, st$y), aes(X, Y), shape = 21, size = 2.6,
+                 fill = col$path, colour = "white", stroke = 0.7) +
+      geom_path(data = pts, aes(X, Y), colour = col$path, linewidth = 1.6, lineend = "round") +
+      geom_label(data = lb, aes(X + 160 * side, Y, label = lab, hjust = (1 - side) / 2),
+                 size = 3.6 * tm(), fill = "white", label.size = 0,
+                 label.padding = unit(0.15, "lines"))
+  }
+  g + coord_sf(xlim = c(-1500, 10000), ylim = c(-200, 6400), expand = FALSE, datum = NA) +
+    theme_void() +
+    theme(plot.background = element_rect(fill = "white", colour = NA),
+          plot.margin = margin(2, 2, 2, 2))
+}
+}
+```
+
+## Your homework
+
+How many places did you list? &nbsp; *1–2 · 3–4 · 5 or more*
+
+If a public-health researcher could put you at **one place** only, which did you choose?
+
+::: {.vote}
+- **A** My home
+- **B** Where I spent the most time
+- **C** Where exposure was most likely
+- **D** Another place
+- **E** I don't have enough information
+:::
+
+::: notes
+**0:00–0:02.** Hands for the number of places, then for A–E. Say the spread out loud.
+Listen for two answers that are not on the list. "All of these places matter" is activity space; it comes back with Maya. "It depends on the disease" is right; it comes back with Sam.
+:::
+
+## What your answer assumes
+
+::: {.assume}
+::: {.row .head}
+[Your answer]{.a} [What it assumes]{.b} [The follow-up]{.c}
+:::
+::: {.row .fragment}
+[My home]{.a} [Where you live stands in for what you were exposed to.]{.b} [Convenient, but is it right?]{.c}
+:::
+::: {.row .fragment}
+[Most time]{.a} [Duration is what matters.]{.b} [Is time alone enough?]{.c}
+:::
+::: {.row .fragment}
+[Most likely exposure]{.a} [Risk differs from place to place.]{.b} [How would you know?]{.c}
+:::
+::: {.row .fragment}
+[Not enough information]{.a} [The uncertainty is real.]{.b} [Can a health department wait for it to go away?]{.c}
+:::
+:::
+
+::: notes
+**0:02–0:04.** One row per answer; ask the follow-up before revealing the next row.
+Home: many health datasets do exactly this. Convenient, and sometimes misleading.
+Most time: exposure also depends on intensity, on how it happens, and on what actually took place there.
+Most likely exposure: opens the problem of missing exposure information.
+Not enough information: this is the wicked problem. Public-health decisions often cannot wait for the uncertainty to disappear.
+:::
+
+## Same illness, five years later
+
+Who **changed** their answer when the illness appeared five years later?
+
+::: {.fragment}
+How confident are you that you found the place of **exposure**?
+
+*Very · Somewhat · Not very · Completely uncertain*
+:::
+
+::: notes
+**0:04–0:06.** Hands for "changed", then for confidence.
+Listen for: moving, a new job or school, travel, previous homes, effects that show up later.
+Then say: "A few minutes ago, one point on a map seemed reasonable. I changed only one thing — the time between exposure and diagnosis — and suddenly that point became much less meaningful."
+This sets up latency and residential history; Frank brings it back.
+:::
+
+## What else would you need to know?
+
+::: {.three-places .big}
+::: {.place}
+[PLACE]{.ph}
+Where else were you?
+:::
+::: {.place}
+[TIME]{.ph}
+When were you there?
+:::
+::: {.place}
+[EXPOSURE]{.ph}
+What happened there?
+:::
+:::
+
+::: {.fragment .keybox}
+These are exactly the dimensions that **disappear** when a person is represented only by a home address.
+:::
+
+::: notes
+**0:06–0:09.** Take their requests and sort them into the three boxes out loud, or on the board.
+Likely: *Place:* work or school, previous homes, travel. *Time:* how long at each place, when symptoms began. *Exposure:* pollution or hazards, food and water, whether others became ill.
+Disease type and personal risk factors do not fit a box. Park them for Sam and for the smoking question in Riverton.
+Reveal the key point last.
+:::
+
+## Meet Riverton
+
+```{r}
+map_town()
+```
+
+::: notes
+**0:09–0:10.** Riverton is invented, so nobody's real neighborhood is on trial today.
+River town, industrial past, about 18,000 people. Point out the Flats (south bank, older rowhouses), Downtown across the bridge, Hillcrest up the hill, and the hospital in Northside.
+:::
+
+## How a health dataset sees Maya
+
+```{r}
+map_maya_dot()
+```
+
+::: notes
+**0:10–0:11.** "This is how many health datasets see you." Maya, 19, is one geocoded home address in the Flats.
+:::
+
+## How Maya actually lives
+
+```{r}
+map_maya_week()
+```
+
+::: notes
+**0:11–0:12.** "This is closer to how you actually live." Classes downtown, a coffee-shop job in Hillcrest, the gym in Westend, a friend in Northside.
+Activity space: the places where someone spends time and may meet risks (air, noise, food, other people) or protections (parks, clinics).
+Ask: **which dot should represent Maya?** Students who wrote "all of these places matter" already had this idea; credit them.
+:::
+
+## Maya's Thursday as a space-time path
+
+::: {.r-stack}
+```{r}
+#| fig-height: 4.6
+map_maya_stc(full = FALSE)
+```
+
+::: {.fragment}
+```{r}
+#| fig-height: 4.6
+map_maya_stc(full = TRUE)
+```
+:::
+:::
+
+::: {.caption}
+The floor is the map of Riverton; height is the time of day. **Vertical line:** staying in one place. **Sloped line:** moving.
+:::
+
+::: notes
+**0:12–0:14.** First the health record's version: one vertical line at her home address, from 6 am to midnight.
+Click for her actual Thursday. Read it from the floor up: gym before class, classes downtown, five hours at the coffee shop, home for dinner, a friend's place until 11 pm. Dotted lines drop each stop onto the map.
+This is a space-time path (Hägerstrand's time geography). The week map showed *where*; this adds *when*.
+Ask: where and when could Maya have been exposed to something, or exposed someone else? Exposure needs the same place **and** the same time. Sam will need exactly this.
+:::
+
+## {.statement}
+
+[Message 1 of 3]{.kicker}
+
+A person is **not a point**.
+
+::: {.muted}
+Health data usually need one location. Your life doesn't have one.
+:::
+
+::: notes
+**0:14.** First of the three messages. Read it and move to the cluster.
+:::
+
+## What do you think is happening here?
+
+```{r}
+map_cases()
+```
+
+::: notes
+**0:14–0:16.** Let students call out explanations; don't evaluate yet. Expect: something in the water or soil, a factory, chance, older residents, more testing.
+Background if asked: smoking causes about half of bladder cancers; certain workplace chemicals (dye, rubber, leather, paint industries) raise risk; about 9 in 10 people diagnosed are over 55.
+:::
+
+## Before blaming the Flats, what would you want to know?
+
+::: {.three-places}
+::: {.place}
+[PLACE]{.ph}
+Where else did these 23 people live and work?
+:::
+::: {.place}
+[TIME]{.ph}
+How long have they lived in the Flats? When could exposure have happened?
+:::
+::: {.place}
+[EXPOSURE]{.ph}
+Is there a possible source nearby? Who lives in the Flats: age, smoking?
+:::
+:::
+
+::: {.fragment .keybox}
+Expected for a town of 18,000 over five years: **about `r nums$expected`**. Riverton's total is ordinary. The **concentration** is not: the Flats holds `r nums$flats_pop_share`% of residents but `r nums$flats_now` of `r nums$n` cases.
+:::
+
+::: notes
+**0:16–0:19.** Same three boxes as the homework, now for 23 people. Ask before showing.
+The expected count uses the national rate (~84,500 new US cases a year, roughly 25 per 100,000) × 18,000 people × 5 years.
+Point: a cluster can be about *where* rather than *how many*. The next slides answer the boxes one at a time: exposure (the plant), place (jobs), time (who arrived when, and 1985).
+:::
+
+## Your explanation, before more evidence?
+
+```{r}
+#| fig-height: 4.9
+map_cases()
+```
+
+::: {.vote .inline}
+- **A** Something in the Flats
+- **B** Chance
+- **C** Who lives there
+- **D** Can't tell yet
+:::
+
+::: notes
+**0:19–0:20.** Take hands and remember the split.
+From here on, the same question after every slide: **has your explanation changed?**
+:::
+
+## Exposure: a former dye plant next door
+
+```{r}
+#| fig-height: 4.6
+map_source()
+```
+
+::: {.caption}
+`r nums$within_1km` of `r nums$n` cases live within 1 km (dashed circle). Some chemicals used to make dyes cause bladder cancer in exposed workers. **Has your explanation changed?**
+:::
+
+::: notes
+**0:20–0:22.** Keller Dye Works, 1948–1994.
+Many will now say "it's the plant". Ask how residents (not workers) would have been exposed: air, soil, the river, old wells. "How would you know?" from the homework applies here.
+Ask: act now, or more evidence first?
+:::
+
+## Place: where they worked
+
+```{r}
+#| fig-height: 4.6
+map_work()
+```
+
+::: {.caption}
+`r nums$keller` cases worked at Keller; `r nums$ashby` at Ashby Rubber, which used related chemicals. `r nums$keller + nums$ashby - nums$workers_flats` of these `r nums$keller + nums$ashby` workers live outside the Flats. **Has your explanation changed?**
+:::
+
+::: notes
+**0:22–0:25.** The link may run through the job, not the neighborhood. Some Flats cases are there partly because Keller workers lived near Keller.
+A second plant across the river now matters too. Which places matter most now?
+:::
+
+## Time: who lives in the Flats now?
+
+```{r}
+#| fig-height: 4.6
+map_commons()
+```
+
+::: {.caption}
+`r nums$commons` cases live in Riverside Commons, a senior building opened in 2016; all moved in after age 65. About 9 in 10 people diagnosed with bladder cancer are over 55. **Has your explanation changed?**
+:::
+
+::: notes
+**0:25–0:27.** A senior apartment building concentrates older people, and older people are more likely to be diagnosed.
+These five moved in after the plant closed. Part of today's "cluster" is about who lives there, not what happened there.
+:::
+
+## One of the 23: Frank, 69
+
+```{r}
+map_frank(1)
+```
+
+::: notes
+**0:27–0:28.** On the cluster map Frank is a dot in Hillcrest, far from the Flats.
+His record also says where he was diagnosed: Valley Regional Hospital. Already two places.
+:::
+
+## Frank's other places
+
+```{r}
+map_frank(3)
+```
+
+::: notes
+**0:28–0:29.** He grew up in the Flats, worked at Keller Dye Works 1976–1990, and moved to Hillcrest in 2001.
+Nothing on his health record mentions any of this.
+:::
+
+## Frank's seventy years
+
+```{r}
+#| fig-height: 3.6
+frank_timeline()
+```
+
+::: {.caption .ask}
+Diagnosed in 2023, about thirty years after he last worked at the plant.
+:::
+
+::: notes
+**0:29–0:30.** Call back the homework: "You changed your answers when I added five years. For Frank it is more than thirty."
+The exposure window, if there was one, closed in 1990; the diagnosis came 33 years later, at a different address.
+:::
+
+## Where should Frank appear on the map?
+
+::: {.three-places}
+::: {.place}
+[A · Where he lives]{.ph}
+Hillcrest, since 2001
+:::
+::: {.place}
+[B · Where he was diagnosed]{.ph}
+Valley Regional Hospital, 2023
+:::
+::: {.place}
+[C · Where he may have been exposed]{.ph}
+The Flats and Keller, 1950s–1990s
+:::
+:::
+
+::: {.vote .inline}
+- **D** More than one of these
+- **E** It depends on the question
+:::
+
+::: {.fragment .keybox}
+For many chronic diseases, exposure and diagnosis are separated by **years or decades**. Some workplace chemicals linked to bladder cancer can take 20 years or more to show an effect.
+:::
+
+::: notes
+**0:30–0:33.** Hands for A–E. Push on E: a map for planning cancer care (where patients live now) differs from a map for finding causes (where they were exposed).
+Distinguish current residence, place of diagnosis, and place of exposure.
+:::
+
+## Time: the same 23 people, in 1985
+
+```{r}
+#| fig-height: 4.6
+map_1985()
+```
+
+::: {.caption}
+`r nums$flats_85` lived in the Flats while the plant was running; `r nums$flats_85_moved` of them have since moved away. `r nums$out_85` did not live in Riverton at all. **Has your explanation changed?**
+:::
+
+::: notes
+**0:33–0:36.** "Now do for all 23 what we just did for Frank."
+The cluster is still there in 1985, but it is made of different people. Some of the most plausibly exposed now live elsewhere; some of today's Flats cases arrived recently.
+:::
+
+## Same cases, four stories
+
+```{r}
+#| fig-width: 14
+#| fig-height: 7.6
+map_summary()
+```
+
+::: notes
+**0:36–0:37.** Walk the four panels: the Flats → the plant → the jobs → the timing.
+More information did not make the story simpler; it changed it. About 10 cases still have no identifiable link (smoking, age, chance). There is no single hidden answer.
+:::
+
+## Change the disease: an infection
+
+**Sam**, Lehigh sophomore, tests positive on Monday for a contagious respiratory infection (think flu or measles).
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4.3
+map_sam()
+```
+
+::: {.ask}
+[Where did Sam get infected?]{.fragment} &nbsp;&nbsp;&nbsp; [Where might it spread next?]{.fragment}
+:::
+
+::: notes
+**0:37–0:41.** For the students who wrote "it depends on the disease": they were right.
+Same mobility, very different question. For an infection we look back days, not decades, and we also look forward: Sam's lecture halls, coworkers in Allentown, the gym in Easton, the bus to Philadelphia.
+Health departments do this in practice: for measles they publish the places and times where people may have been exposed.
+Here mobility is both a clue and the pathway.
+:::
+
+## Same mobility, different questions
+
+|                       | Chronic disease (Frank)               | Infection (Sam)                        |
+|-----------------------|---------------------------------------|----------------------------------------|
+| Time window           | Years to decades                      | Days to weeks                          |
+| Direction             | Look backward                         | Look backward **and** forward          |
+| Mobility tells us     | Where exposure *might* have happened  | Where it happened, and where it may go |
+
+::: notes
+**0:41–0:42.** Quick slide. Skip it if time is short.
+:::
+
+## {.statement}
+
+[Message 2 of 3]{.kicker}
+
+Where disease is **diagnosed** is not necessarily where it was **acquired**.
+
+::: {.muted}
+For Frank: decades earlier, across town. For Sam: days earlier, in another city.
+:::
+
+::: notes
+**0:42–0:43.** Second message. Then back to Riverton for the decision.
+:::
+
+## You are the Riverton Health Department
+
+:::: {.columns}
+::: {.column width="55%"}
+Possible actions
+
+- Test soil, air, and water at the former plant
+- Contact former Keller and Ashby workers
+- Offer screening
+- Collect residential and work histories
+- Issue a public warning
+- Restrict access to the site
+- Keep monitoring
+:::
+::: {.column width="45%"}
+Your call?
+
+::: {.vote}
+- **A** Act now
+- **B** Targeted investigation
+- **C** Collect more data first
+- **D** Routine surveillance
+:::
+:::
+::::
+
+::: notes
+**0:43–0:48.** Hands for A–D, then ask one student from each camp to defend it.
+Useful complication: screening people without symptoms for bladder cancer is not routinely recommended; it can produce false alarms and unnecessary procedures.
+Who should decide: scientists, health officials, elected leaders, residents?
+:::
+
+## Acting too early, acting too late
+
+:::: {.columns}
+::: {.column width="50%"}
+**Too early**
+
+- Fear and stigma for the Flats
+- Falling home values; worried landlords and seniors
+- Money spent on the wrong problem
+- Trust lost if the threat wasn't real
+:::
+::: {.column width="50%"}
+**Too late**
+
+- Preventable illness continues
+- Former workers and families never warned
+- Trust lost if officials knew and waited
+:::
+::::
+
+::: {.fragment .keybox}
+How certain should we be before taking action? And how much about people's movements should a health department be allowed to collect?
+:::
+
+::: notes
+**0:48–0:51.** Is waiting for better evidence always the most scientific choice?
+Privacy: residential and work histories, maybe phone location data. Useful for public health; intrusive for individuals.
+:::
+
+## Better questions
+
+[Where did you get sick?]{.strike}
+
+::: {.incremental}
+- Where **could** exposure have occurred?
+- **When?**
+- **Who else** might have been exposed?
+- What evidence would **change** our interpretation?
+- When do we know **enough to act**?
+:::
+
+::: notes
+**0:51–0:53.** Replace the opening question with these.
+:::
+
+## Three messages
+
+::: {.messages}
+1. A person is **not a point**.
+2. Where disease is **diagnosed** is not necessarily where it was **acquired**.
+3. Decisions still have to be made **under uncertainty**.
+:::
+
+::: {.muted}
+In recitation, you are the Riverton Health Department.
+:::
+
+::: notes
+**0:53–0:55.** Return to the homework: your answers disagreed, and several of them were reasonable. That disagreement is why locating exposure is a real public-health problem, not a failure to find the right answer.
+Remaining time: questions.
+:::
